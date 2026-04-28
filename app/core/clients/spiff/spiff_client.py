@@ -22,16 +22,16 @@ class SpiffClient:
         url = f"{self.base_url}{path}"
 
         # for debug
-        print("URL: "+ url)
+        # print("URL: "+ url)
 
         async with httpx.AsyncClient() as client:
             response = await client.get(url, headers=headers, params=params)
             response.raise_for_status()
 
             # For debug
-            print(f"Status : {response.status_code}")
-            print(f"Headers : {dict(response.headers)}")
-            print(f"Raw body : {response.text!r}")
+            # print(f"Status : {response.status_code}")
+            # print(f"Headers : {dict(response.headers)}")
+            # print(f"Raw body : {response.text!r}")
             
             return response.json()
 
@@ -42,6 +42,12 @@ class SpiffClient:
         async with httpx.AsyncClient() as client:
             response = await client.post(url, headers=headers, json=payload, params=params)
             response.raise_for_status()
+            
+            # For debug
+            # print(f"Status : {response.status_code}")
+            # print(f"Headers : {dict(response.headers)}")
+            # print(f"Raw body : {response.text!r}")
+
             return response.json()
 
     # -------------------------
@@ -72,20 +78,61 @@ class SpiffClient:
             payload=payload,
             params={"execution_mode": execution_mode},
         )
+    
+    async def get_message_models(self) -> dict[str, Any]:
+        """
+        GET /message-models
+
+        Get a list of message models.
+        """
+        return await self._get(f"/message-models")
+    
+    async def get_messages(self, process_instance_id: str | None) -> dict[str, Any]:
+        """
+        GET /messages
+
+        Get a list of message instances.
+        """
+        return await self._get(f"/messages", params={"process_instance_id": process_instance_id})
 
     # -----------------------------
     # Process instances
     # -----------------------------
 
-    async def get_process_instance(self, instance_id: str) -> dict[str, Any]:
+    async def get_process_instance(self, modified_process_model_identifier: str, process_instance_id: str) -> dict[str, Any]:
         """
-        GET /process-instances/{instance_id}
+        GET /process-instances/{modified_process_model_identifier}/{process_instance_id}
 
         Fetches the current state of a process instance including its
         process variables.
         """
-        return await self._get(f"/process-instances/{instance_id}")
+        return await self._get(f"/process-instances/{modified_process_model_identifier}/{process_instance_id}")
     
+    async def get_process_instances(
+        self,
+        payload: dict[str, Any],
+        page: int = 1,
+        per_page: int = 100,
+    ) -> dict[str, Any]:
+        """
+        POST /process-instances
+
+        Returns a list of process instances
+        """
+        return await self._post(
+            f"/process-instances",
+            payload=payload,
+            params={"page": page, "per_page": per_page},
+        )
+    
+    async def get_process_instance_logs(self, modified_process_model_identifier: str, process_instance_id: str) -> dict[str, Any]:
+        """
+        GET /logs/{modified_process_model_identifier}/{process_instance_id}
+
+        Returns a list of process instances
+        """
+        return await self._get(f"/logs/{modified_process_model_identifier}/{process_instance_id}")
+
     # -----------------------------
     # Process models
     # -----------------------------
@@ -107,7 +154,7 @@ class SpiffClient:
         Params:
             process_group_identifier: The group containing the models we want to return
         """
-        return await self._get(path="/process-models", params=process_group_identifier)
+        return await self._get(path="/process-models", params={"process_group_identifier": process_group_identifier})
     
     
     async def get_process_model_file(self, modified_process_model_identifier: str, file_name: str) -> dict[str, Any]:
@@ -117,6 +164,15 @@ class SpiffClient:
         Fetches a process model file.
         """
         return await self._get(path=f"/process-models/{modified_process_model_identifier}/files/{file_name}")
+
+    async def get_processes(self) -> dict[str, Any]:
+        """
+        GET /processes
+
+        Returns all BPMN process definitions from all process models.
+        Useful for finding processes for call activities.
+        """
+        return await self._get(f"/processes")
 
     # ------------------------
     # Tasks

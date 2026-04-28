@@ -17,7 +17,7 @@ class KeycloakTokenClient:
     is within TOKEN_EXPIRY_BUFFER_SECONDS of expiring.
     """
 
-    TOKEN_EXPIRY_BUFFER_SECONDS = 30
+    TOKEN_EXPIRY_BUFFER_SECONDS = 299 # keycloak token expiration duration - 5 min
 
     def __init__(self):
         self._token: str | None = None
@@ -41,7 +41,7 @@ class KeycloakTokenClient:
         if the cached token is missing or about to expire.
         """
         if self._is_token_valid():
-            return self._token
+            return self._token # type: ignore
 
         payload = {
             "grant_type": "password",
@@ -62,7 +62,7 @@ class KeycloakTokenClient:
 
         self._token = data["access_token"]
         self._expires_at = time.monotonic() + data.get("expires_in", 300)
-        return self._token
+        return self._token  # type: ignore
 
     async def get_auth_headers(self) -> dict[str, str]:
         """ Returns Authorization headers."""
